@@ -12,18 +12,17 @@ export default function getIcsFileUrl(event: CalendarEvent): Promise<string> {
       return [d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()]
     }
 
-    const getEndDate = (start: DateArray, end: DateArray): DateArray => {
-      if (start.join('-') === end.join('-')) {
-        const [y, m, d] = end
-        const nextDay = new Date(Date.UTC(y, m - 1, d + 1))
-        return [nextDay.getUTCFullYear(), nextDay.getUTCMonth() + 1, nextDay.getUTCDate()]
-      }
-      return end
+    // Event end dates are inclusive (the last day of the event), but an all-day
+    // iCalendar DTEND is exclusive (RFC 5545 §3.6.1), so always move it to the next day.
+    const getExclusiveEndDate = (inclusiveEnd: DateArray): DateArray => {
+      const [y, m, d] = inclusiveEnd
+      const nextDay = new Date(Date.UTC(y, m - 1, d + 1))
+      return [nextDay.getUTCFullYear(), nextDay.getUTCMonth() + 1, nextDay.getUTCDate()]
     }
 
     const startArray = parseDate(event.startDate)
-    const rawEndArray = parseDate(event.endDate ?? event.startDate)
-    const finalEndArray = getEndDate(startArray, rawEndArray)
+    const inclusiveEndArray = parseDate(event.endDate ?? event.startDate)
+    const finalEndArray = getExclusiveEndDate(inclusiveEndArray)
 
     const eventAttributes: EventAttributes = {
       start: startArray,
